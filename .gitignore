@@ -51,13 +51,4 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Ignore all
-*
-
-# Unignore all with extensions
-!*.*
-
-# Unignore all dirs
-!*/
-
 .vscode
