@@ -19,25 +19,34 @@ int main(int argc, char ** argv){
     unsigned long cacheSize;
     printf("Enter cache size in KB: "); 
     scanf("%lu", &cacheSize);
-    printf("the cache size provided is : %lu\n", cacheSize);
+    // printf("the cache size provided is : %lu\n", cacheSize);
     long noOfblocks = (cacheSize* KILOBYTE)/BLOCKSIZE ;
-    printf("The no of blocks is : %lu\n", noOfblocks);
+    // printf("The no of blocks is : %lu\n", noOfblocks);
 
     indexBits = (int) ceil( log2(noOfblocks) );
-    printf("The number of index bits is %d\n", indexBits);
+    // printf("The number of index bits is %d\n", indexBits);
 
     tagBits = BLOCKSIZE - indexBits - OFFSET; 
-    printf("The number of tag bits is %d\n", tagBits);
+    // printf("The number of tag bits is %d\n", tagBits);
 
 
     // Set verbose mode 
     char verboseMode[100];
+    
+    // Set verbose mode start and end
+    int verboseStart, verboseEnd;
+    
     printf("Verbose mode (y/n): "); 
     scanf("%s", verboseMode);
     if(strcmp(verboseMode, "y")== 0){
         verboseModeOn = 1;
+        printf("Enter first and last reference to track: "); 
+        scanf("%d %d", &verboseStart, &verboseEnd);        
     }
+
+   
     
+
     // Initialize an array the size of cache specified above
     cacheContent cache[noOfblocks];
 
@@ -134,17 +143,10 @@ int main(int argc, char ** argv){
         int hitOrMiss = 0;
         char caseNumber [32];
 
-
-        if(verboseModeOn == 1){
-            if(index < 30){               
-                // printf("The mem address in binary is : %s",memAddBin);
-                printf("%d %X %X %d %X %d %s %d\n",index,cacheIndex,tagIndex,validBit,cacheTag, dirtyBit, caseNumber, noOfBytes);
-                // printf("The cache index is : %X\n", cacheIndex);
-            }            
-        }
-
         // case 1 
         if(cacheTag == tagIndex){
+            hitOrMiss = 1;
+            strcpy(caseNumber, "1");
             if (strcmp(traceComponents[1], "W")== 0) {
                 writeTime++;
                 cc->dirtyBit = 1;
@@ -157,7 +159,9 @@ int main(int argc, char ** argv){
         }
         // case 2
         else{
+            hitOrMiss = 0;
             if(dirtyBit == 0){
+                strcpy(caseNumber, "2a");
                 if (strcmp(traceComponents[1], "W")== 0) {
                     cc->cacheTag = tagIndex;
                     cc->dirtyBit = 1;
@@ -177,6 +181,7 @@ int main(int argc, char ** argv){
                 }
             }
             else if(dirtyBit == 1){
+                strcpy(caseNumber, "2b");
                 if (strcmp(traceComponents[1], "W")== 0) {
                     cc->cacheTag = tagIndex;
                     cc->dirtyBit = 1;
@@ -197,6 +202,14 @@ int main(int argc, char ** argv){
                     dirtyReadMisses++;
                 }
             }
+        }
+
+        if(verboseModeOn == 1){
+            if(index >= verboseStart &&  index <= verboseEnd){               
+                // printf("The mem address in binary is : %s",memAddBin);
+                printf("%d %X %X %d %X %d %d %s\n",index,cacheIndex,tagIndex,validBit,cacheTag, dirtyBit,hitOrMiss, caseNumber);
+                // printf("The cache index is : %X\n", cacheIndex);
+            }            
         }
 
         
