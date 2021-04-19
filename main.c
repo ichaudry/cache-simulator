@@ -7,6 +7,8 @@
 #include <math.h>
 #include "main.h"
 
+int printCount = 0;
+
 int main(int argc, char ** argv){
     char filename[100];
     int verboseModeOn = 0;
@@ -44,8 +46,6 @@ int main(int argc, char ** argv){
         cache[i].dirtyBit = 0;
         cache[i].validBit = 0;
     }
-
-    printf("The cache tag is : %s\n",cache[].cacheTag);
 
     FILE * file = fopen( filename, "r" ); 
     char * fileContent = 0;
@@ -98,7 +98,7 @@ int main(int argc, char ** argv){
     int bytesWritten = 0;
     int readTime = 0;
     int writeTime = 0;
-    int missRate = 0;
+    double missRate = 0;
 
 
     //Loop to iterate over all traces/traces
@@ -116,40 +116,88 @@ int main(int argc, char ** argv){
         // Need a function that maps the address to the right index in the array
         char * memAdd = traceComponents[2];
 
-        char * memAddBin = malloc(128);
+        int noOfBytes; 
+        
+        sscanf(traceComponents[3],"%d",&noOfBytes);
 
-        HexToBin(memAdd, memAddBin);
+        char * memAddBin = HexToBin(memAdd);
 
         int cacheIndex = getCacheIndex(memAddBin);
 
         int tagIndex = getTagIndex(memAddBin);
 
-        // cacheContent cc = cache[cacheIndex];
+        cacheContent * cc = &cache[cacheIndex];
 
-        int validBit = 0;
-        int dirtyBit = 0;
-        char * cacheTag = 0; 
+        int validBit = cc->validBit;
+        int dirtyBit = cc->dirtyBit;
+        int cacheTag = cc->cacheTag; 
         int hitOrMiss = 0;
         char caseNumber [32];
 
-        // if verbose mode on print out the cache index we figured out in the above function
 
-        // Function to figure out cache tag
-        // if verbose mode on print cache tag
+        if(verboseModeOn == 1){
+            if(index < 30){               
+                // printf("The mem address in binary is : %s",memAddBin);
+                printf("%d %X %X %d %X %d %s %d\n",index,cacheIndex,tagIndex,validBit,cacheTag, dirtyBit, caseNumber, noOfBytes);
+                // printf("The cache index is : %X\n", cacheIndex);
+            }            
+        }
 
-        // The above function figures out what index in cache array we need to look at 
-        
-        // We process the cache content
+        // case 1 
+        if(cacheTag == tagIndex){
+            if (strcmp(traceComponents[1], "W")== 0) {
+                writeTime++;
+                cc->dirtyBit = 1;
+                // bytesWritten = bytesWritten + noOfBytes;
+            }
+            else if (strcmp(traceComponents[1], "R")== 0) {
+                // bytesRead = bytesRead + noOfBytes;
+                readTime++;
+            }
+        }
+        // case 2
+        else{
+            if(dirtyBit == 0){
+                if (strcmp(traceComponents[1], "W")== 0) {
+                    cc->cacheTag = tagIndex;
+                    cc->dirtyBit = 1;
+                    cc->validBit = 1;
+                    writeTime = writeTime + (1 + MISS_PENALTY);
+                    bytesRead = bytesRead + noOfBytes;
+                    writeMisses++;
+                }
 
-        // If verbose mode print valid bit of cache at that index
-
-        // If verbose mode on print already existing tag - if empty/invalid print 0
-
-        // If verbose mode on print dirty bit 
-
-        // If verbose mode print if its a hit or miss
-
-        // If verbose mode on print out which case
+                else if (strcmp(traceComponents[1], "R")== 0) {
+                    cc->cacheTag = tagIndex;
+                    cc->dirtyBit = 0;
+                    cc->validBit = 1;
+                    readTime = readTime + (1 + MISS_PENALTY);
+                    bytesRead = bytesRead + noOfBytes;                    
+                    readMisses++;
+                }
+            }
+            else if(dirtyBit == 1){
+                if (strcmp(traceComponents[1], "W")== 0) {
+                    cc->cacheTag = tagIndex;
+                    cc->dirtyBit = 1;
+                    writeTime = writeTime + (1 + (2 * MISS_PENALTY));
+                    writeMisses++;
+                    bytesWritten = bytesWritten + noOfBytes;
+                    bytesRead = bytesRead + noOfBytes;
+                    dirtyWriteMisses++;
+                }
+                
+                else if (strcmp(traceComponents[1], "R")== 0) {
+                    cc->cacheTag = tagIndex;
+                    cc->dirtyBit = 0;
+                    readTime = readTime + (1 + (2 * MISS_PENALTY));
+                    readMisses++;
+                    bytesRead = bytesRead + noOfBytes;
+                    bytesWritten = bytesWritten + noOfBytes;
+                    dirtyReadMisses++;
+                }
+            }
+        }
 
         
         if (strcmp(traceComponents[1], "W")== 0) {
@@ -158,23 +206,26 @@ int main(int argc, char ** argv){
 
         if (strcmp(traceComponents[1], "R")== 0) {
             readCount++;
-        }
-
-        if(verboseModeOn == 1){
-            if(index < 20){
-                // printf("The mem address in binary is : %s",memAddBin);
-                printf("%d %X %X %d %s %d %s\n",index,cacheIndex,tagIndex,validBit,cacheTag, dirtyBit, caseNumber);
-                // printf("The cache index is : %X\n", cacheIndex);
-            }            
-        }
+        }   
 
         free(traceComponents);
         free(memAddBin);
         index++;
     }
 
-    printf("The read count is : %d\n", readCount);
-    printf("The write count is : %d\n",writeCount);    
+    // calculate statistics
+    accessCount = readCount + writeCount;
+    totalMisses = readMisses + writeMisses;
+    missRate = (double)totalMisses/(double)accessCount;
+
+
+    printf("direct-mapped, writeback, size = %luKB\n",cacheSize);
+    printf("loads %d stores %d total %d\n", readCount , writeCount, accessCount);
+    printf("rmiss %d wmiss %d total %d\n", readMisses , writeMisses , totalMisses);
+    printf("dirty rmiss %d dirty wmiss %d\n", dirtyReadMisses , dirtyWriteMisses);
+    printf("bytes read %d bytes written %d\n", bytesRead, bytesWritten);
+    printf("read time %d write time %d\n", readTime, writeTime);
+    printf("miss rate %f\n", missRate);
 
     free(fileContent);
     free(traces);
@@ -185,6 +236,7 @@ int main(int argc, char ** argv){
 int getCacheIndex(char * memAddBin){
     
     char * cacheIndexBin = malloc(32);
+    cacheIndexBin[0] = 0;
 
     // reverse iterate to get the index bits
     for (unsigned i = strlen(memAddBin) - OFFSET; i-- > strlen(memAddBin) - OFFSET - indexBits ; )
@@ -211,6 +263,8 @@ int getCacheIndex(char * memAddBin){
 int getTagIndex(char * memAddBin){
     
     char * tagIndexBin = malloc(32);
+    tagIndexBin[0] = 0;
+
 
     // reverse iterate to get the index bits
     for (unsigned i = strlen(memAddBin) - OFFSET - indexBits; i-- > 0 ; )
@@ -275,9 +329,10 @@ char **tokenizeFileContents(char *fileContent , char * delimeters)
 
 
 // function to convert Hexadecimal to Binary Number
-void HexToBin(char* hexdec, char * memAddBin)
+char * HexToBin(char* hexdec)
 {
- 
+    char * memAddBin = malloc(128);
+
     long int i = 2;
  
     while (hexdec[i]) {
@@ -343,6 +398,7 @@ void HexToBin(char* hexdec, char * memAddBin)
         }
         i++;
     }
+    return memAddBin;
 }
 
 

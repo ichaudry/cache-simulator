@@ -15,14 +15,14 @@
 typedef struct {
     int validBit;
     int dirtyBit;
-    char cacheTag[128];
+    int cacheTag;
 } cacheContent;
 
 int indexBits;
 int tagBits;
 
 char **tokenizeFileContents(char *fileContent, char * delimeter);
-void HexToBin(char* hexdec, char * memAddBin);
+char * HexToBin(char* hexdec);
 void inplace_reverse(char * str);
 int getTagIndex(char * memAddBin);
 int getCacheIndex(char * memAddBin);
