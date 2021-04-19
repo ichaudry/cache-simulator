@@ -5,7 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "main2.h"
+#include "sys2.h"
 
 int printCount = 0;
 
@@ -33,10 +33,10 @@ int main(int argc, char ** argv){
     // printf("%lu\n", noOfSets);
 
     indexBits = (int) ceil( log2(noOfSets) );
-    printf("The number of index bits is %d\n", indexBits);
+    // printf("The number of index bits is %d\n", indexBits);
 
     tagBits = BLOCKSIZE - indexBits - OFFSET; 
-    printf("The number of tag bits is %d\n", tagBits);
+    // printf("The number of tag bits is %d\n", tagBits);
 
     // Set verbose mode 
     char verboseMode[100];
@@ -155,11 +155,9 @@ int main(int argc, char ** argv){
 
         for(int j = 0; j< setAssociativity ; j++){
             cacheContent * cc = &cache[cacheIndex][j];
-
             validBit = cc->validBit;
             dirtyBit = cc->dirtyBit;
-            cacheTag = cc->cacheTag;                      
-            caseNumber [32];
+            cacheTag = cc->cacheTag;                                  
 
             if(cc->lastUsed < cache[cacheIndex][lruBlock].lastUsed){
                 lruBlock = j;
@@ -188,6 +186,10 @@ int main(int argc, char ** argv){
      
         if(hitOrMiss == 0){
             cacheContent * cc = &cache[cacheIndex][lruBlock];
+            validBit = cc->validBit;
+            dirtyBit = cc->dirtyBit;
+            cacheTag = cc->cacheTag;  
+
             if(dirtyBit == 0){
                 strcpy(caseNumber, "2a");
                 if (strcmp(traceComponents[1], "W")== 0) {
@@ -264,12 +266,12 @@ int main(int argc, char ** argv){
     missRate = (double)totalMisses/(double)accessCount;
 
 
-    printf("direct-mapped, writeback, size = %luKB\n",cacheSize);
+    printf("%d-way, writeback, size = %luKB\n",setAssociativity,cacheSize);
     printf("loads %d stores %d total %d\n", readCount , writeCount, accessCount);
     printf("rmiss %d wmiss %d total %d\n", readMisses , writeMisses , totalMisses);
     printf("dirty rmiss %d dirty wmiss %d\n", dirtyReadMisses , dirtyWriteMisses);
     printf("bytes read %d bytes written %d\n", bytesRead, bytesWritten);
-    printf("read time %d write time %d\n", readTime, writeTime);
+    printf("read time %d write time %d total access time %d\n", readTime, writeTime, readTime + writeTime);
     printf("miss rate %f\n", missRate);
 
     free(fileContent);

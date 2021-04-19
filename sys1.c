@@ -5,7 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "main.h"
+#include "sys1.h"
 
 int printCount = 0;
 
