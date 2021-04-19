@@ -237,7 +237,7 @@ int main(int argc, char ** argv){
     printf("rmiss %d wmiss %d total %d\n", readMisses , writeMisses , totalMisses);
     printf("dirty rmiss %d dirty wmiss %d\n", dirtyReadMisses , dirtyWriteMisses);
     printf("bytes read %d bytes written %d\n", bytesRead, bytesWritten);
-    printf("read time %d write time %d\n", readTime, writeTime);
+    printf("read time %d write time %d total access time %d\n", readTime, writeTime, readTime+ writeTime);
     printf("miss rate %f\n", missRate);
 
     free(fileContent);
